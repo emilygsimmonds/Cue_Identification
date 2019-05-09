@@ -37,8 +37,6 @@ list_K_pred[[((i+4)/5)]] <- seq(2015-(i+3), 2015-(i-1), 1)}
 # save a vector of names for the different k-fold subsets
 data_names_k <- as.character(1:11)
 
-#### Code to run GDD model ####
-
 #### Code to run SWA model ####
 
 ## Run the model and get results 
@@ -118,3 +116,120 @@ Predictions_SWA_K <- mapply(get_preds_SW, window_climate = as.list(Results_data_
 save(Predictions_SWA_K, file = "Predictions_SWA_K.RData")
 
 
+
+#### Code to run SWR model ####
+
+## Run the model and get results 
+source('Run_SW.R')
+
+# Run SWA for complete dataset
+Results_SWR <- run_SW(data_all, absolute = F, climate = climate_data)
+
+# pulls out everything into a big list can then extract from that
+
+## Get data and parameters for prediction
+source('Params_SW.R')
+
+# extract parameters for complete dataset
+Parameters_SWR <- get_params_SW(Results_SWR, data_all$lay_mean, "complete", type = "Params")
+# SAVE
+write.csv(Parameters_SWR, "Parameters_SWR.csv", row.names=T)
+
+# extract climate data for complete dataset 'best' window
+Results_data_SWR <- get_params_SW(Results_SWR, data_all$lay_mean, "complete", type = "Data")
+# SAVE
+write.csv(Results_data_SWR, "Results_data_SWR.csv")
+
+#### Code to run CSP model ####
+
+## Run models and get results
+source('Format_CSP.R')
+source('Run_CSP.R')
+
+# start by formatting the climate data
+climate_CSP <- format_CSP_clim(climate_data, var = "temp", refday = 141)
+row.names(climate_CSP) <- seq(1961,2015,1) # name rows as years of study
+
+# run the model for complete dataset
+Results_CSP <- run_CSP(bio_data = data_all, climate_data = as.data.frame(climate_CSP), 
+                       refyears = seq(1961,2015,1),
+                       type = "lay_mean")
+
+# all odd = estimates, all even = r squared
+# extract each
+list_slope <- as.list(Results_CSP[1])
+list_rs <- as.list(Results_CSP[2])
+
+## Get data and parameters for prediction
+source('Params_CSP.R')
+source('Climate_extract.R')
+
+# extract parameters for complete dataset
+Parameters_CSP <- t(get_params_CSP(slope = list_slope, r_s = list_rs,
+                           bio_data = data_all, climate_data = climate_data, 
+                           var = "temp", type = "params", day = seq(1,365,1), 
+                           date_var = "lay_mean"))
+# SAVE
+write.csv(Parameters_CSP, "Parameters_CSP.csv")
+
+## Predict for complete dataset (predicts for 2011-2015)
+source('Predict_CSP.R')
+
+# predict
+Predictions_CSP <- get_preds_CSP(actual_days = Parameters_CSP[1:2], bio_data = data_all, 
+                          climate_data = climate_data, var = "temp", tot_years = seq(1961,2015,1),
+                          pred_years = 2011:2015, date_var="lay_mean")
+#SAVE
+save(Predictions_CSP, file="Predictions_CSP.RData")
+
+#### K-fold cross validation - CSP ####
+
+## Run CSP for k-fold cross validation
+
+# all Year columns in list are factor - need to correct this to numeric
+for(i in 1:11){list_K_fold[[i]]$Year <- as.numeric(as.character(list_K_fold[[i]]$Year))}
+
+source('Run_CSP_KFold.R')
+
+# run for the list of datasets
+Results_CSP_K <- mapply(run_CSP_K, bio_data = list_K_fold, pred_years = list_K_pred, 
+                        MoreArgs = list(climate_data = as.data.frame(climate_CSP), 
+                                        refyears = seq(1961,2015,1),
+                                        type = "lay_mean"))
+# SAVE
+save(Results_CSP_K, file="Results_CSP_K.RData")
+
+## Get data and parameter estimates for prediction
+source('Params_CSP.R')
+
+# all odd entries are slope estimates and even = r squared
+list_slope_K <- as.list(Results_CSP_K[seq(1,22,2)])
+list_rs_K <- as.list(Results_CSP_K[seq(2,22,2)])
+
+# extract parameters
+Parameters_CSP_K <- t(mapply(get_params_CSP, slope = list_slope_K, r_s = list_rs_K,
+                             bio_data = list_K_fold, MoreArgs = list(climate_data = climate_data, 
+                                                                     var = "temp", type = "params", 
+                                                                     day = seq(1,365,1), 
+                                                                     date_var = "lay_mean")))
+
+
+## Predict for k-fold cross validation 
+source('Predict_CSP_KFold.R')
+
+list_actual_days_K <- split(Parameters_CSP_K[,1:2], seq(nrow(Parameters_CSP_K)))
+Predictions_CSP_K <- mapply(get_preds_CSP_K, actual_days = list_actual_days_K, bio_data = list_K_fold, 
+                            pred_years = list_K_pred,
+                            MoreArgs = list(climate_data = climate_data, var = "temp", 
+                                            tot_years = seq(1961,2015,1),
+                                            date_var="lay_mean"), SIMPLIFY = F)
+# SAVE
+save(Predictions_CSP_K, file = "Predictions_CSP_K.RData")
+
+#### Code to run PSR model ####
+
+#### K-fold cross validation - PSR ####
+
+#### Code to run GDD model ####
+
+#### K-fold cross validation - GDD ####
