@@ -228,7 +228,44 @@ save(Predictions_CSP_K, file = "Predictions_CSP_K.RData")
 
 #### Code to run PSR model ####
 
+## Run models and get parameter estimates
+source('Run_PSR.R')
+
+# run the model for complete dataset
+Parameters_PSR <- run_PSR(bio_data = data_all, climate_data = climate_data, tot_days = 365,
+                                         type = "params")
+# SAVE
+save(Parameters_PSR, file="Parameters_PSR.RData")
+
+## Predict for complete dataset (predicts for 2011-2015)
+source('Predict_CSP.R')
+
+# predict
+Predictions_PSR <- run_PSR(bio_data = data_all, climate_data = climate_data, tot_days = 365,
+                           type = "pred", pred_years = seq(2011,2015,1))
+# SAVE
+save(Predictions_PSR, file="PSR_predictions.RData")
+  
 #### K-fold cross validation - PSR ####
+
+## Run PSR for k-fold cross validation
+
+## Get data and parameter estimates for prediction
+source('run_PSR.R')
+
+Parameters_PSR_K <- mapply(run_PSR, bio_data = list_K_fold, 
+                           MoreArgs = list(climate_data = climate_data, tot_days = 365,
+                                           type = "params"))
+
+# extract the most influential days of temperature for each data subset
+list_windows_K <- as.list(Parameters_PSR_K[seq(1,22,2)])
+
+## Predict for k-fold cross validation 
+Predictions_PSR_K <- mapply(run_PSR, bio_data = list_K_fold,  pred_years = list_K_pred,
+                            MoreArgs = list(climate_data = climate_data, tot_days = 365,
+                                            type = "pred"), SIMPLIFY = F)
+#SAVE
+save(Predictions_PSR_K, file="PSR_predictions_K.RData")
 
 #### Code to run GDD model ####
 

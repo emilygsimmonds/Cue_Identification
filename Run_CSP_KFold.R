@@ -1,4 +1,4 @@
-#### Functions to run the CSP model for K-fold cross validation
+#### Function to run the CSP model for K-fold cross validation
 
 # extracts years in a different way to Run_CSP
 
