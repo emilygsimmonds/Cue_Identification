@@ -11,6 +11,8 @@ library(climwin)
 library(mgcv)
 library(GenSA)
 library(boot)
+library(foreach)
+library(doParallel)
 
 ## Data - import two datasets (biological and climate)
 # then split to ones needed
@@ -238,7 +240,6 @@ Parameters_PSR <- run_PSR(bio_data = data_all, climate_data = climate_data, tot_
 save(Parameters_PSR, file="Parameters_PSR.RData")
 
 ## Predict for complete dataset (predicts for 2011-2015)
-source('Predict_CSP.R')
 
 # predict
 Predictions_PSR <- run_PSR(bio_data = data_all, climate_data = climate_data, tot_days = 365,
@@ -269,4 +270,97 @@ save(Predictions_PSR_K, file="PSR_predictions_K.RData")
 
 #### Code to run GDD model ####
 
+## Format
+
+
+## Run models and get results
+source('Format_GDD.R')
+source('Run_GDD.R')
+source('Uncertainty_GDD.R')
+source('Params_GDD.R')
+
+# set initial values and limits of search
+init<-c(100,4,1) # cumulative degrees, minimum threshold, start date
+lower<-c(50,1,1)
+upper<-c(1000,10,200)
+
+# start by formatting the climate data
+climate_GDD <- list(format_GDD_clim(climate_data, seq(1961,2010,1), pred=F))
+
+# run the model for complete dataset
+# need to make data a list
+data_GDD <- list(data_all)
+# set i 
+i <- 1
+Results_GDD <- CI_results_GDD(data=data_GDD, 
+                              tempmat=climate_GDD, init=init, lower=lower, upper=upper)
+# SAVE
+save(Results_GDD, file="Parameters_GDD.RData")
+
+
+## Predict for complete dataset (predicts for 2011-2015)
+source('Predict_GDD.R')
+
+# create prediction climate data
+climate_pred <- format_GDD_clim(climate_data, seq(2011, 2015 ,1), pred=T)
+
+# predict
+Predictions_GDD <- get_preds_GDD(Results_GDD, data_all, 
+                                 tempmat = climate_pred)
+#SAVE
+save(Predictions_GDD, file="Predictions_GDD.RData")
+
 #### K-fold cross validation - GDD ####
+
+
+## Run GDD for k-fold cross validation
+source('Format_GDD.R')
+source('Run_GDD.R')
+source('Uncertainty_GDD.R')
+source('Params_GDD.R')
+
+# format cliamte data for every data subset (11 total)
+list_K_tempmat1 <- list(1961:2010)
+years <- seq(1961, 2015, 1)
+for(i in 2:11){marker <- which(years == list_K_pred[[i]][1]):which(years == list_K_pred[[i]][5])
+list_K_tempmat1[[i]] <- seq(1961, 2015, 1)[-marker]}
+list_K_tempmat <- mapply(format_GDD_clim, years = list_K_tempmat1,
+                         MoreArgs = list(pred=F, climate_data = climate_data),
+                         SIMPLIFY = F)
+# Need opposite of K_tempmat for prediction for 5 test years of each data subset
+list_K_tempmat2 <- list(2011:2015)
+years <- seq(1961, 2015, 1)
+for(i in 2:11){marker <- which(years == list_K_pred[[i]][1]):which(years == list_K_pred[[i]][5])
+list_K_tempmat2[[i]] <- seq(1961, 2015, 1)[marker]}
+list_K_tempmat_pred <- mapply(format_GDD_clim, years = list_K_tempmat2,
+                              MoreArgs = list(pred=T, climate_data = climate_data),
+                              SIMPLIFY = F)
+
+# run for the list of datasets in parallel to increase speed
+cl = makeCluster(2) # make a cluster
+registerDoParallel(cl) # register it
+
+# run foreach loop
+Results_GDD_K = foreach(i=1:length(list_K_fold),.combine = rbind,.packages = c("boot", "GenSA"),
+                        .errorhandling = 'pass') %dopar% {
+  CI_results_GDD(data=list_K_fold, tempmat=list_K_tempmat, init=init, lower=lower, upper=upper)
+}
+
+stopCluster(cl) # end cluster
+
+# SAVE
+save(Results_GDD_K, file="Results_GDD_K.RData")
+
+
+## Predict for k-fold cross validation 
+source('Predict_GDD.R')
+
+# make list of results to enter into prediction function
+Results_GDD_list_K <- split(Results_GDD_K, seq(nrow(Results_GDD_K))) 
+
+# predict
+
+Predictions_GDD_K <- mapply(get_preds_GDD, Results_GDD_list_K, list_K_fold, 
+                            list_K_tempmat_pred, SIMPLIFY = F)
+#SAVE
+save(Predictions_GDD_K, file="Predictions_GDD_K.RData")
