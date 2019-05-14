@@ -15,8 +15,8 @@ library(boot)
 ## Data - import two datasets (biological and climate)
 # then split to ones needed
 
-bio_data <- read.csv("bio_data_example.csv", header = T)
-climate_data <- read.csv("climate_data_example.csv", header = T)
+bio_data <- read.csv("bio_data.csv", header = T)
+climate_data <- read.csv("climate_data.csv", header = T)
 
 # make a vector of all lay dates for last 5 years of data
 Prediction_lay_dates <- c(bio_data$lay_mean[51:55])
