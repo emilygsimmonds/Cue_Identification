@@ -5,7 +5,7 @@ output: html_document
 
 ## Code for manuscript: Cue Identification in Phenology: a case study of the predictive performance of current statistical tools. 
 
-## DOI: 10.5281/zenodo.2838825
+## https://doi.org/10.5281/zenodo.2838825
 
 This repository contains:
 
