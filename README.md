@@ -13,7 +13,12 @@ This repository contains:
 
 [bio_data.csv](https://github.com/emilygsimmonds/Cue_Identification/blob/master/bio_data.csv) : biological data used in the analyses. Rows are years of study. Columns are; Year (year of study), lay_date (annual population mean lay date in YYYY-MM-DD format), lay_mean (annual population mean lay date as day of year), doy95 (day of the year by which 95% of the population have laid).
 
-[climate_data.csv](https://github.com/emilygsimmonds/Cue_Identification/blob/master/climate_data.csv) : climate data used in the analyses. Originally sourced from https://www.metoffice.gov.uk/climate/uk/data/ukcp09/datasets. Rows are days. Columns are; date, year, yday (day of year), day (day of month), month, temp (daily mean temperature in degrees celsius). 
+[climate_data.csv](https://github.com/emilygsimmonds/Cue_Identification/blob/master/climate_data.csv) : climate data used in the analyses. Originally sourced from https://www.metoffice.gov.uk/climate/uk/data/ukcp09/datasets. Rows are days. Columns are; date, year, yday (day of year), day (day of month), month, temp (daily mean temperature in degrees celsius). ©Crown Copyright 2009. The UK Climate Projections (UKCP09) have been made available by the Department for
+Environment, Food and Rural Affairs (Defra) and the Department of Climate Change (DECC) under licence from the Met
+Office, UK Climate Impacts Programme, British Atmospheric Data Centre, Newcastle University, University of East Anglia,
+Environment Agency, Tyndall Centre and Proudman Oceanographic Laboratory. These organisations give no warranties,
+express or implied, as to the accuracy of the UKCP09 and do not accept any liability for loss or damage, which may arise
+from reliance upon the UKCP09 and any use of the UKCP09 is undertaken entirely at the users risk.
 
 [Code to run cue identification analyses.R](https://github.com/emilygsimmonds/Cue_Identification/blob/master/Code%20to%20run%20cue%20identification%20analyses.R) : script to run all of the analyses for this paper. This script includes code to run both K-fold cross validation and analyses on a whole dataset. This script runs the SWA, SWR, CSP, PSR, and GDD models, extracts parameters, extracts climate window data, and predicts lay dates. Outputs from each step are saved out for future use. 
 
